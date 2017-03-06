@@ -35,12 +35,33 @@
 // Without command line arguments, the program does nothing.
 
 use std::env;
-
+use std::path::Path;
+use std::error::Error;
+use std::fs::File;
+use std::io::BufReader;
+use std::io::BufRead;
 
 fn main() {
     println!("Hello, world!");
     let args: Vec<_> = env::args().collect();
     if args.len() > 1 {
+        let filepath = Path::new(&args[1]);
+        let filepathdisplay = filepath.display();
+        let mut file = File::open(&filepath);
+        let mut filestatus = match file
+        {
+            Ok(file) => "Good",
+            Err(why) => "Bad",
+        };
+        if filestatus == "Bad" {
+            println!("The argument at {} is not a real file", args[1]);
+        }
+
+// I'd like to avoid panics, but let's come back later.
+
+//        let filereader = BufReader::new(&file);
+
+
         println!("The first argument is {}", args[1]);
     } else {
         println!("This is the testing code");
