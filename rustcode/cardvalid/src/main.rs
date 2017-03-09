@@ -40,29 +40,29 @@ use std::error::Error;
 use std::fs::File;
 use std::io::BufReader;
 use std::io::BufRead;
+use std::io::Read;
 
 fn main() {
-    println!("Hello, world!");
     let args: Vec<_> = env::args().collect();
     if args.len() > 1 {
-        let filepath = Path::new(&args[1]);
-        let filepathdisplay = filepath.display();
-        let mut file = File::open(&filepath);
-        let mut filestatus = match file
-        {
-            Ok(file) => "Good",
-            Err(why) => "Bad",
-        };
-        if filestatus == "Bad" {
-            println!("The argument at {} is not a real file", args[1]);
+        let filename = Path::new(&args[1]);
+        let filenameshow = filename.display();
+        let file = File::open(&filename);
+        let mut fileok = file.is_ok();
+        if fileok == false {
+            println!("The argument at {} is not a real file.", filenameshow);
+            return;
         }
-
-// I'd like to avoid panics, but let's come back later.
-
-//        let filereader = BufReader::new(&file);
-
-
-        println!("The first argument is {}", args[1]);
+        let mut realfile = file.unwrap();
+        let mut filetext = String::new();
+        fileok = realfile.read_to_string(&mut filetext).is_ok();
+        if fileok == false {
+            println!("The argument at {} is not utf-8.", filenameshow);
+            return;
+        }
+        for line in filetext.lines() {
+            println!("{}",line);
+        }
     } else {
         println!("This is the testing code");
     }
