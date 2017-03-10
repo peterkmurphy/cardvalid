@@ -41,6 +41,7 @@ use std::env;
 use std::path::Path;
 use std::fs::File;
 use std::io::Read;
+use std::cmp;
 
 // Constants for type of credit cards the program handles (as printed out)
 
@@ -58,13 +59,13 @@ static STAT_IN: &'static str = "invalid";
 // A constant for the minimum indentation level for the [in]validity status
 // as pretty printed out. This makes the output lined up.
 
-const MIN_STAT_INDENT: i32 = 29;
+const MIN_STAT_INDENT: usize = 29;
 
 /// Strips all whitespace from a string.
 pub fn whitespacebegone(input: &str) -> String {
     let mut buf = String::with_capacity(input.len());
     for c in input.chars() {
-        if c.is_whitespace() != true {
+        if ! c.is_whitespace() {
             buf.push(c);
         }
     }
@@ -72,8 +73,17 @@ pub fn whitespacebegone(input: &str) -> String {
 }
 
 /// Makes list of integers from string of digits.
-pub fn listofintegers(input: &String) -> Vec<i32> {
-    return vec![1];
+pub fn listofintegers(input: &String) -> Option<(Vec<u32>),> {
+    let mut v: Vec<u32> = Vec::new();
+    for c in input.chars() {
+        if c.is_digit(10) == true {
+            v.push(c.to_digit(10).unwrap());
+        }
+        else {
+            return None;
+        }
+    }
+    return Some(v);
 }
 
 
@@ -92,12 +102,19 @@ pub fn listofintegers(input: &String) -> Vec<i32> {
 ///
 /// The sole parameter is cardnoin: a string containing a credit card number.
 /// The function returns the pretty-printed result of the analysis.
-pub fn cardnoanalyse(cardnoin: &str) -> &str {
+pub fn cardnoanalyse (cardnoin: &str) -> String {
     let cardno = whitespacebegone(cardnoin);
-    let cardnolen = cardno.len();
+    let cardnolen = cardno.chars().count();
     let mut cardtype = CARD_UN;
     let mut state = STAT_IN;
-    cardnoin
+    let prologue = format!("{}: {}", cardtype, cardno.to_string());
+    let reps = cmp::max(MIN_STAT_INDENT - prologue.chars().count(), 1);
+    let midspacing = std::iter::repeat(" ").take(reps).collect::<String>();
+    let mut digitsout = listofintegers(&cardno);
+    if digitsout.is_none() {
+        return format!("{}{}({})", prologue, midspacing, state);
+    }
+    return format!("{}{}({})", prologue, midspacing, state);
 }
 
 // The following constants are for testing.
