@@ -32,15 +32,113 @@
 // MasterCard: 5105105105105106 (invalid)
 // Unknown: 9111111111111111    (invalid)
 //
-// Without command line arguments, the program does nothing.
+// Without command line arguments, the program does nothing except print out
+// a warning message. For testing, please type:
+//
+// cargo test
 
 use std::env;
 use std::path::Path;
-use std::error::Error;
 use std::fs::File;
-use std::io::BufReader;
-use std::io::BufRead;
 use std::io::Read;
+
+// Constants for type of credit cards the program handles (as printed out)
+
+static CARD_VI: &'static str = "VISA";
+static CARD_AM: &'static str = "AMEX";
+static CARD_DI: &'static str = "Discover";
+static CARD_MC: &'static str = "MasterCard";
+static CARD_UN: &'static str = "Unknown";
+
+// Constants for the validity or invalidity of cards (as printed out)
+
+static STAT_VA: &'static str = "valid";
+static STAT_IN: &'static str = "invalid";
+
+// A constant for the minimum indentation level for the [in]validity status
+// as pretty printed out. This makes the output lined up.
+
+const MIN_STAT_INDENT: i32 = 29;
+
+/// Strips all whitespace from a string.
+pub fn whitespacebegone(input: &str) -> String {
+    let mut buf = String::with_capacity(input.len());
+    for c in input.chars() {
+        if c.is_whitespace() != true {
+            buf.push(c);
+        }
+    }
+    return buf;
+}
+
+/// Makes list of integers from string of digits.
+pub fn listofintegers(input: &String) -> Vec<i32> {
+    return vec![1];
+}
+
+
+/// The cardnoanalyse analyse takes a string which is meant to contain
+/// a credit card number. After stripping all white space and line break
+/// characters, it attempts to identify the type of card. It then pretty-
+/// prints the card type, the card number and whether it is valid or not.
+///
+/// For example, the following input:
+///
+/// 4111111111111111
+///
+/// Is analysed and returned as:
+///
+/// VISA: 4111111111111111       (valid)
+///
+/// The sole parameter is cardnoin: a string containing a credit card number.
+/// The function returns the pretty-printed result of the analysis.
+pub fn cardnoanalyse(cardnoin: &str) -> &str {
+    let cardno = whitespacebegone(cardnoin);
+    let cardnolen = cardno.len();
+    let mut cardtype = CARD_UN;
+    let mut state = STAT_IN;
+    cardnoin
+}
+
+// The following constants are for testing.
+
+const TESTDATA: &'static [&'static str] = &[
+    "4111111111111111",
+    "4111111111111",
+    "4012888888881881",
+    "378282246310005",
+    "6011111111111117",
+    "5105105105105100",
+    "5105 1051 0510 5106",
+    "9111111111111111",
+    "4408 0412 3456 7893",
+    "4417 1234 5678 9112"];
+
+const EXPECTEDOUTPUT: &'static [&'static str] = &[
+    "VISA: 4111111111111111       (valid)",
+    "VISA: 4111111111111          (invalid)",
+    "VISA: 4012888888881881       (valid)",
+    "AMEX: 378282246310005        (valid)",
+    "Discover: 6011111111111117   (valid)",
+    "MasterCard: 5105105105105100 (valid)",
+    "MasterCard: 5105105105105106 (invalid)",
+    "Unknown: 9111111111111111    (invalid)",
+    "VISA: 4408041234567893       (valid)",
+    "VISA: 4417123456789112       (invalid)"];
+
+#[cfg(test)]
+mod tests {
+    use super::cardnoanalyse;
+    use super::TESTDATA;
+    use super::EXPECTEDOUTPUT;
+
+    #[test]
+    fn test_cardnoanalyse() {
+        for i in 0..TESTDATA.len() {
+            assert_eq!(cardnoanalyse(TESTDATA[i]), EXPECTEDOUTPUT[i]);
+        }
+    }
+}
 
 fn main() {
     let args: Vec<_> = env::args().collect();
@@ -64,6 +162,6 @@ fn main() {
             println!("{}",line);
         }
     } else {
-        println!("This is the testing code");
+        println!("There are no arguments for this program.");
     }
 }
