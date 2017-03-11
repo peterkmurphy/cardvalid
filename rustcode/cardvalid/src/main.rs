@@ -86,7 +86,6 @@ pub fn listofintegers(input: &String) -> Option<(Vec<u32>),> {
     return Some(v);
 }
 
-
 /// The cardnoanalyse analyse takes a string which is meant to contain
 /// a credit card number. After stripping all white space and line break
 /// characters, it attempts to identify the type of card. It then pretty-
@@ -107,47 +106,82 @@ pub fn cardnoanalyse (cardnoin: &str) -> String {
     let cardnolen = cardno.chars().count();
     let mut cardtype = CARD_UN;
     let mut state = STAT_IN;
-    let prologue = format!("{}: {}", cardtype, cardno.to_string());
-    let reps = cmp::max(MIN_STAT_INDENT - prologue.chars().count(), 1);
-    let midspacing = std::iter::repeat(" ").take(reps).collect::<String>();
-    let mut digitsout = listofintegers(&cardno);
+    let mut prologue = format!("{}: {}", cardtype, cardno.to_string());
+    let mut reps = cmp::max(MIN_STAT_INDENT - prologue.chars().count(), 1);
+    let mut midspacing = std::iter::repeat(" ").take(reps).collect::<String>();
+    let digitsout = listofintegers(&cardno);
     if digitsout.is_none() {
         return format!("{}{}({})", prologue, midspacing, state);
     }
+    let digitarray = digitsout.unwrap();
+    if digitarray[0] == 4 && (cardnolen == 13 || cardnolen == 16) {
+        cardtype = CARD_VI;
+    }
+    else if digitarray[0] == 3 && (digitarray[1] == 4 ||
+            digitarray[1] == 7) && cardnolen == 15 {
+        cardtype = CARD_AM;
+    }
+    else if digitarray[0] == 5 && (digitarray[1] >= 1 || digitarray[1] <= 5)
+            && cardnolen == 16 {
+        cardtype = CARD_MC;
+    }
+    else if &cardno[..4] == "6011" && cardnolen == 16 {
+        cardtype = CARD_DI;
+    }
+    let mut checksum = 0;
+    for i in 0..cardnolen { // We loop through the card digits...
+         let item = digitarray[cardnolen - i - 1]; // Take items in reverse...
+
+// Note: we start at the rightmost digit, where i is 0, but this is considered
+// to be an "odd" digit. This is why i % 2 == 1 is "even", and i % 2 == 0 is
+// "odd". Such is how the Luhn algorithm works.
+
+        if i % 2 == 1 { // Even digits
+            if item == 9 {
+                checksum += 9; // Digit 9 doubles to 18 and becomes 9
+            }
+            else {
+                checksum += (item * 2) % 9; // Take modulo 9.
+            }
+        }
+        else { // Odd digits
+            checksum += item;
+        }
+    }
+    if checksum % 10 == 0 {
+        state = STAT_VA;
+    }
+    prologue = format!("{}: {}", cardtype, cardno.to_string());
+    reps = cmp::max(MIN_STAT_INDENT - prologue.chars().count(), 1);
+    midspacing = std::iter::repeat(" ").take(reps).collect::<String>();
     return format!("{}{}({})", prologue, midspacing, state);
 }
-
-// The following constants are for testing.
-
-const TESTDATA: &'static [&'static str] = &[
-    "4111111111111111",
-    "4111111111111",
-    "4012888888881881",
-    "378282246310005",
-    "6011111111111117",
-    "5105105105105100",
-    "5105 1051 0510 5106",
-    "9111111111111111",
-    "4408 0412 3456 7893",
-    "4417 1234 5678 9112"];
-
-const EXPECTEDOUTPUT: &'static [&'static str] = &[
-    "VISA: 4111111111111111       (valid)",
-    "VISA: 4111111111111          (invalid)",
-    "VISA: 4012888888881881       (valid)",
-    "AMEX: 378282246310005        (valid)",
-    "Discover: 6011111111111117   (valid)",
-    "MasterCard: 5105105105105100 (valid)",
-    "MasterCard: 5105105105105106 (invalid)",
-    "Unknown: 9111111111111111    (invalid)",
-    "VISA: 4408041234567893       (valid)",
-    "VISA: 4417123456789112       (invalid)"];
 
 #[cfg(test)]
 mod tests {
     use super::cardnoanalyse;
-    use super::TESTDATA;
-    use super::EXPECTEDOUTPUT;
+    const TESTDATA: &'static [&'static str] = &[
+        "4111111111111111",
+        "4111111111111",
+        "4012888888881881",
+        "378282246310005",
+        "6011111111111117",
+        "5105105105105100",
+        "5105 1051 0510 5106",
+        "9111111111111111",
+        "4408 0412 3456 7893",
+        "4417 1234 5678 9112"];
+    const EXPECTEDOUTPUT: &'static [&'static str] = &[
+        "VISA: 4111111111111111       (valid)",
+        "VISA: 4111111111111          (invalid)",
+        "VISA: 4012888888881881       (valid)",
+        "AMEX: 378282246310005        (valid)",
+        "Discover: 6011111111111117   (valid)",
+        "MasterCard: 5105105105105100 (valid)",
+        "MasterCard: 5105105105105106 (invalid)",
+        "Unknown: 9111111111111111    (invalid)",
+        "VISA: 4408041234567893       (valid)",
+        "VISA: 4417123456789112       (invalid)"];
 
     #[test]
     fn test_cardnoanalyse() {
@@ -176,7 +210,9 @@ fn main() {
             return;
         }
         for line in filetext.lines() {
-            println!("{}",line);
+            if line.chars().count() > 0 {
+                println!("{}",cardnoanalyse(line));
+            }
         }
     } else {
         println!("There are no arguments for this program.");
